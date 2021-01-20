@@ -469,6 +469,12 @@ def train_and_evaluate(config: ml_collections.ConfigDict, workdir: str):
   target_shape = (config.per_device_batch_size, config.max_target_length)
 
   m = models.Transformer(eval_config)
+
+  # Calling `jit` on init will make JAX trace through the model and compile it
+  # at once, which means we possibly avoid many small op-by-op compilations.
+  # However, it does mean we cannot re-use ops (e.g., for compiling many kernels
+  # of the same shape), so it depends on the specifics of the model whether this
+  # is a good idea or not.
   initial_variables = jax.jit(m.init)(init_rng,
                                       jnp.ones(input_shape, jnp.float32),
                                       jnp.ones(target_shape, jnp.float32))
